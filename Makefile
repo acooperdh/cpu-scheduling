@@ -1,5 +1,5 @@
-main: asn4.c asn4.h
-    gcc asn4.c -o asn4 -lpthread
+main:
+    gcc asn4.c queue.o -o asn4
 queue.o: queue.c queue.h
     gcc queue.c -o queue.o
 clean:
