@@ -1,6 +1,7 @@
 #ifndef __QUEUE_HEADER
 #define __QUEUE_HEADER
 #include <stdbool.h>
+#include <string.h>
 
 typedef struct _Node{
     void* data; 

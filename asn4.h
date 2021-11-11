@@ -4,9 +4,11 @@
 #include "queue.h"
 
 typedef struct _task{
-    int id; 
-    int priority;
+    int number; 
+    int arrival;
     int burst;
+    int remaining;
+    int wait_time;
 } Task;
 
 #endif

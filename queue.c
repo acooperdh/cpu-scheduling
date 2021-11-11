@@ -130,7 +130,7 @@ void* queue_dequeue(Queue* queue)
 
 void* queue_peek(Queue* queue)
 {
-	return get_element(queue, 0);
+	return queue_get_element(queue, 0);
 }
 
 int queue_size(Queue* queue)
@@ -186,4 +186,23 @@ bool queue_destroy(Queue* queue)
 	free(queue);
 
 	return true;
+}
+
+Queue* queue_copy(Queue* queue) {
+    if (queue == NULL)
+        return NULL;
+
+    Queue* newQueue = queue_initialize(queue->itemSize);
+
+    if (newQueue == NULL)
+        return NULL;
+
+    Node* current = queue->first;
+    while (current != NULL)
+    {
+        queue_add_at(newQueue, newQueue->size, current->data);
+        current = current->next;
+    }
+
+    return newQueue;
 }

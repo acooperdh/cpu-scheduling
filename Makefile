@@ -1,6 +1,5 @@
-main:
-    gcc asn4.c queue.o -o asn4
-queue.o: queue.c queue.h
-    gcc queue.c -o queue.o
-clean:
-    rm asn4 Output.txt
+main: asn4.c queue.o asn4.h
+	gcc queue.o asn4.c -o asn4 
+	./asn4
+clean: 
+	rm asn4 *.o
