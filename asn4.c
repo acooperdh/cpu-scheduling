@@ -6,9 +6,7 @@
 
 #define TASK_SIZE 8
 
-void sort_by_task_number(void* q){
-    if (q == NULL) return;
-    Queue* queue = (Queue*)q;
+void sort_by_task_number(Queue* queue){
     for(int i = 0; i < queue->size; i++){
         for(int j = 0; j < queue->size - 1; j++){
             void* first_element = queue_get_element(queue, j);
@@ -23,8 +21,7 @@ void sort_by_task_number(void* q){
 }
 
 // outputs waiting times for each task as well as returns the total amount of time waiting 
-void output_waiting_times(void* q, FILE* fp){
-    Queue* queue = (Queue*)q;
+void output_waiting_times(Queue* queue, FILE* fp){
     double total_wait_time = 0;
     for(int i = 0; i < queue->size; i++){
         void* next_element = queue_get_element(queue, i);
@@ -36,12 +33,10 @@ void output_waiting_times(void* q, FILE* fp){
     return; 
 }
 // first come first serve method working properly, needs to output to file
-int fcfs(void* q, FILE* fp){
+void fcfs(void* q, FILE* fp){
     Queue* queue = (Queue*)q;
     fprintf(fp,"FCSC:\n");
     int current_time = 0;
-    int num_of_tasks = queue->size;
-    double average_wait_time, total_wait_time = 0;
     for(int i = 0; i < queue->size; i++){
         void* next_element = queue_get_element(queue, i);
         Task* task = (Task*)next_element;
@@ -52,19 +47,17 @@ int fcfs(void* q, FILE* fp){
         fprintf(fp,"T%d\t%d\t%d\n", task->number, task->start_time, task->end_time);
     }
     
-    output_waiting_times(q, fp);
+    output_waiting_times(queue, fp);
     
-    return 0;
+    return;
 }
 
 // time quantum is 4ms
 // if a new tasks arrives at the same time as a task that is old
 // the new one goes first in the queue 
-int round_robin(void* q, FILE* fp){
+void round_robin(void* q, FILE* fp){
     int time_quantum = 4;
     int current_time = 0;;
-    double total_wait_time;
-    double average_wait_time;
     Queue* queue = (Queue*)q;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     int num_of_tasks = queue->size;
@@ -89,16 +82,15 @@ int round_robin(void* q, FILE* fp){
         }
     }
     // sorting finished task queue by task number 
-    sort_by_task_number((void*)finished_queue);
+    sort_by_task_number(finished_queue);
     // output wait times for each task 
-    output_waiting_times((void*)finished_queue, fp);
+    output_waiting_times(finished_queue, fp);
     
-    return 0;
+    return;
 }
 // non preemptive shortest job first 
-int npsjf(void* q, FILE* fp){
+int npsjf(Queue* queue, FILE* fp){
     fprintf(fp, "\nNPSJF:\n");
-    Queue* queue = (Queue*)q;
     int current_time = 0;
     double total_wait_time, average_wait_time;
     int num_of_tasks = queue->size;
@@ -127,9 +119,26 @@ int npsjf(void* q, FILE* fp){
         fprintf(fp,"T%d\t%d\t%d\n", task->number, task->start_time, task->end_time);
     }
 
-    sort_by_task_number((void*)queue);
-    output_waiting_times((void*)queue, fp);
+    sort_by_task_number(queue);
+    output_waiting_times(queue, fp);
     return 0;
+}
+
+void check_ready_queue(Queue* queue, int current_time){
+    return;
+}
+
+void psjf(Queue* queue, FILE* fp){
+    fprintf(fp, "\nPSJF:\n");
+    int current_time = 0;
+    Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    // while(queue->size > 0){
+        
+            
+    //     }
+    // }
+    return;
 }
 
 int main(){
@@ -187,7 +196,7 @@ int main(){
     //FCFS implementationnt fcfs(inital_tasks);
     fcfs((void*)inital_tasks, output_file);
     round_robin((void*)rr_tasks, output_file);
-    npsjf((void*)npsjf_tasks, output_file);
+    npsjf(npsjf_tasks, output_file);
     fclose(output_file);
     fclose(fp);
 
