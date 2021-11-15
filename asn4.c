@@ -33,10 +33,6 @@ void output_waiting_times(Queue* queue, FILE* fp){
     return; 
 }
 
-void copy_queue(Queue* q){
-    return;
-}
-
 // first come first serve method working properly, needs to output to file
 void fcfs(Queue* queue, FILE* fp){
     fprintf(fp,"FCSC:\n");
@@ -126,25 +122,20 @@ int npsjf(Queue* queue, FILE* fp){
     output_waiting_times(queue, fp);
     return 0;
 }
-
-void check_ready_queue(Queue* queue, int current_time){
-    return;
-}
-
-
-
+// preemptive shortest job first 
 void psjf(Queue* queue, FILE* fp){
     fprintf(fp, "\nPSJF:\n");
     int current_time = 0;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
-    // while(queue->size > 0){
-        
-            
-    //     }
-    // }
+    int num_of_tasks = queue->size;
+    fprintf(fp, "\nPSJF\n");
+    
     return;
 }
+
+// preemptive priority scheduling
+
 
 int main(){
 
