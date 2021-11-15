@@ -32,9 +32,13 @@ void output_waiting_times(Queue* queue, FILE* fp){
     fprintf(fp, "Average Waiting Time: %.2f\n", total_wait_time/(double)queue->size);
     return; 
 }
+
+void copy_queue(Queue* q){
+    return;
+}
+
 // first come first serve method working properly, needs to output to file
-void fcfs(void* q, FILE* fp){
-    Queue* queue = (Queue*)q;
+void fcfs(Queue* queue, FILE* fp){
     fprintf(fp,"FCSC:\n");
     int current_time = 0;
     for(int i = 0; i < queue->size; i++){
@@ -55,10 +59,9 @@ void fcfs(void* q, FILE* fp){
 // time quantum is 4ms
 // if a new tasks arrives at the same time as a task that is old
 // the new one goes first in the queue 
-void round_robin(void* q, FILE* fp){
+void round_robin(Queue* queue, FILE* fp){
     int time_quantum = 4;
     int current_time = 0;;
-    Queue* queue = (Queue*)q;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     int num_of_tasks = queue->size;
     fprintf(fp, "\nRR:\n");
@@ -128,6 +131,8 @@ void check_ready_queue(Queue* queue, int current_time){
     return;
 }
 
+
+
 void psjf(Queue* queue, FILE* fp){
     fprintf(fp, "\nPSJF:\n");
     int current_time = 0;
@@ -157,6 +162,7 @@ int main(){
     Queue *inital_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *rr_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *npsjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
+    Queue *psjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     while(fgets(inputLine, sizeof(inputLine), fp) != NULL){
         printf("%s\n", inputLine);    
         taskNumber = atoi(strtok(inputLine, "T ,\n"));
@@ -169,33 +175,15 @@ int main(){
         task->remaining = task->burst;
         task->wait_time = 0;
         queue_enqueue(inital_tasks, task);
+        queue_enqueue(rr_tasks, task);
+        queue_enqueue(npsjf_tasks, task);
+        queue_enqueue(psjf_tasks, task);
     }
-    for(int i = 0; i < inital_tasks->size; i++){
-        void* next_element = queue_get_element(inital_tasks, i);
-        Task* new_task = malloc(sizeof(Task));
-        Task* old_task = (Task*)next_element;
-        new_task->number = old_task->number;
-        new_task->arrival = old_task->arrival;
-        new_task->burst = old_task->burst;
-        new_task->remaining = old_task->burst;
-        new_task->wait_time = 0;
-        queue_enqueue(rr_tasks, new_task);
-    }
-    for(int i = 0; i < inital_tasks->size; i++){
-        void* next_element = queue_get_element(inital_tasks, i);
-        Task* new_task = malloc(sizeof(Task));
-        Task* old_task = (Task*)next_element;
-        new_task->number = old_task->number;
-        new_task->arrival = old_task->arrival;
-        new_task->burst = old_task->burst;
-        new_task->remaining = old_task->burst;
-        new_task->wait_time = 0;
-        queue_enqueue(npsjf_tasks, new_task);
-    }
+    
     FILE* output_file = fopen("Output.txt", "w");
     //FCFS implementationnt fcfs(inital_tasks);
-    fcfs((void*)inital_tasks, output_file);
-    round_robin((void*)rr_tasks, output_file);
+    fcfs(inital_tasks, output_file);
+    round_robin(rr_tasks, output_file);
     npsjf(npsjf_tasks, output_file);
     fclose(output_file);
     fclose(fp);
