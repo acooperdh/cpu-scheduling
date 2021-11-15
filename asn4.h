@@ -9,6 +9,8 @@ typedef struct _task{
     int burst;
     int remaining;
     int wait_time;
+    int start_time;
+    int end_time;
 } Task;
 
 #endif
