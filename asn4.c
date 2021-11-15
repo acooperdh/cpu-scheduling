@@ -22,6 +22,7 @@ void sort_by_task_number(void* q){
     return;
 }
 
+// outputs waiting times for each task as well as returns the total amount of time waiting 
 int output_waiting_times(void* q, FILE* fp){
     Queue* queue = (Queue*)q;
     int total_wait_time = 0;
