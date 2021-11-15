@@ -21,7 +21,18 @@ void sort_by_task_number(void* q){
     }
     return;
 }
-    
+
+int output_waiting_times(void* q, FILE* fp){
+    Queue* queue = (Queue*)q;
+    int total_wait_time = 0;
+    for(int i = 0; i < queue->size; i++){
+        void* next_element = queue_get_element(queue, i);
+        Task* task = (Task*)next_element;
+        total_wait_time += task->wait_time;
+        fprintf(fp, "Waiting Time T%d: %d\n", task->number, task->wait_time);
+    }
+    return total_wait_time;
+}
 // first come first serve method working properly, needs to output to file
 int fcfs(void* q, FILE* fp){
     Queue* queue = (Queue*)q;
@@ -55,7 +66,7 @@ int fcfs(void* q, FILE* fp){
 int round_robin(void* q, FILE* fp){
     int time_quantum = 4;
     int current_time = 0;;
-    int total_wait_time = 0;
+    double total_wait_time;
     double average_wait_time;
     Queue* queue = (Queue*)q;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
@@ -82,14 +93,10 @@ int round_robin(void* q, FILE* fp){
     }
     // sorting finished task queue by task number 
     sort_by_task_number((void*)finished_queue);
-
-    for(int i = 0; i < finished_queue->size; i++){
-        void* next_element = queue_get_element(finished_queue, i);
-        Task* task = (Task*)next_element;
-        total_wait_time += task->wait_time;
-        fprintf(fp, "Waiting Time T%d: %d\n", task->number, task->wait_time);
-    }
-    average_wait_time = (double)total_wait_time / (double)finished_queue->size;
+    // output wait times for each task 
+    total_wait_time = output_waiting_times((void*)finished_queue, fp);
+    
+    average_wait_time = total_wait_time / (double)finished_queue->size;
     fprintf(fp, "Average Waiting Time: %.2f\n", average_wait_time);
     return 0;
 }
@@ -98,8 +105,7 @@ int npsjf(void* q, FILE* fp){
     fprintf(fp, "\nNPSJF:\n");
     Queue* queue = (Queue*)q;
     int current_time = 0;
-    int total_wait_time = 0;
-    double average_wait_time;
+    double total_wait_time, average_wait_time;
     int num_of_tasks = queue->size;
     void* first_task = queue_peek(queue);
     Task* task = (Task*)first_task;
@@ -127,13 +133,7 @@ int npsjf(void* q, FILE* fp){
     }
 
     sort_by_task_number((void*)queue);
-    while(queue->size > 0){
-        void* next_element = queue_remove_element(queue, 0);
-        Task* task = (Task*)next_element;
-        total_wait_time += task->wait_time;
-        fprintf(fp, "Waiting Time T%d: %d\n", task->number, task->wait_time);
-    }
-    queue_destroy(queue);
+    total_wait_time = output_waiting_times((void*)queue, fp);
     average_wait_time = (double)total_wait_time / (double)num_of_tasks;
     fprintf(fp, "Average Waiting Time: %.2f\n", average_wait_time);
     
