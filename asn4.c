@@ -53,7 +53,6 @@ int round_robin(void* q){
             current_time += task->remaining;
             task->end_time = current_time;
             task->wait_time += task->start_time - task->arrival;
-            total_wait_time += task->wait_time;
             printf("T%d\t%d\t%d\n", task->number, task->start_time, task->end_time);
             queue_enqueue(finished_queue, task);
         }
@@ -65,12 +64,27 @@ int round_robin(void* q){
             queue_enqueue(queue, task);
         }
     }
+    // sorting finished queue by task number 
+    // REWORK IF POSSIBLE
+    for(int i = 0; i < finished_queue->size; i++){
+        for(int j = 0; j < finished_queue->size - 1; j++){
+            void* first_element = queue_get_element(finished_queue, j);
+            void* second_element = queue_get_element(finished_queue, j+1);
+            if(((Task*)first_element)->number > ((Task*)second_element)->number){
+                void* temp = queue_remove_element(finished_queue, j);
+                queue_enqueue(finished_queue, temp);
+            }
+        }
+    }
+
     for(int i = 0; i < finished_queue->size; i++){
         void* next_element = queue_get_element(finished_queue, i);
         Task* task = (Task*)next_element;
         total_wait_time += task->wait_time;
         printf("Waiting Time T%d: %d\n", task->number, task->wait_time);
     }
+    average_wait_time = (double)total_wait_time / (double)finished_queue->size;
+    printf("Average Waiting Time: %.2f\n", average_wait_time);
     return 0;
 }
 
