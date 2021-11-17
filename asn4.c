@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "asn4.h"
-
+#include <stdbool.h>
 #define TASK_SIZE 8
 
 void sort_by_task_number(Queue* queue){
@@ -32,9 +32,9 @@ void output_waiting_times(Queue* queue, FILE* fp){
     fprintf(fp, "Average Waiting Time: %.2f\n", total_wait_time/(double)queue->size);
     return; 
 }
+
 // first come first serve method working properly, needs to output to file
-void fcfs(void* q, FILE* fp){
-    Queue* queue = (Queue*)q;
+void fcfs(Queue* queue, FILE* fp){
     fprintf(fp,"FCSC:\n");
     int current_time = 0;
     for(int i = 0; i < queue->size; i++){
@@ -55,10 +55,9 @@ void fcfs(void* q, FILE* fp){
 // time quantum is 4ms
 // if a new tasks arrives at the same time as a task that is old
 // the new one goes first in the queue 
-void round_robin(void* q, FILE* fp){
+void round_robin(Queue* queue, FILE* fp){
     int time_quantum = 4;
     int current_time = 0;;
-    Queue* queue = (Queue*)q;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     int num_of_tasks = queue->size;
     fprintf(fp, "\nRR:\n");
@@ -124,22 +123,73 @@ int npsjf(Queue* queue, FILE* fp){
     return 0;
 }
 
-void check_ready_queue(Queue* queue, int current_time){
-    return;
+// checks the task queue and based on the current time will add a new task to the ready queue 
+// when it arrives. then will determine which task is shortest currently and move that to the front of the ready queue 
+bool check_ready_queue(Queue* tasks, Queue* ready_queue, int current_time){
+    if (ready_queue->size = 0){
+        void* first_element = queue_dequeue(tasks);
+        Task* task = (Task*)first_element;
+        task->start_time = current_time;
+        queue_enqueue(ready_queue, queue_dequeue(tasks));
+        return false;
+    }
+    if (current_time == ((Task*)queue_peek(tasks))->arrival){
+        void* current_element = queue_peek(ready_queue);
+        void* new_element = queue_peek(tasks);
+        Task* current_task = (Task*)current_element;
+        Task* new_task = (Task*)new_element;
+        if (current_task->remaining > new_task->remaining){
+            queue_add_at(ready_queue, 0, new_element);
+            return true;
+        }
+        else{
+            //want to store the ready queue after current task to ensure that it is in order of burst times
+            queue_enqueue(ready_queue, queue_dequeue(tasks));
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
-
+// preemptive shortest job first 
 void psjf(Queue* queue, FILE* fp){
     fprintf(fp, "\nPSJF:\n");
     int current_time = 0;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
-    // while(queue->size > 0){
-        
-            
-    //     }
-    // }
+    int num_of_tasks = queue->size;
+    fprintf(fp, "\nPSJF\n");
+    // want to check the next task in the ready queue each time we go thru the loop
+    bool new_element = check_ready_queue(queue, ready_queue, current_time);
+    // used to store the task from the previous loop
+    void* previous = queue_peek(ready_queue);
+    
+    while(ready_queue->size > 0){
+        void* next_element = queue_peek(ready_queue);
+        Task* task = (Task*)next_element;
+        Task* previous_task = (Task*)previous;
+        if (new_element == false){
+            task->remaining -= 1;
+            previous = next_element;
+        }else{
+            printf("T%d\t%d\t%d\n", previous_task->number, previous_task->start_time, previous_task->end_time);
+            previous = next_element;
+            task->remaining -= 1;
+            if (task->remaining == 0){
+                task->end_time = current_time;
+                printf("T%d\t%d\t%d\n", previous_task->number, previous_task->start_time, previous_task->end_time);
+                queue_enqueue(finished_queue, queue_dequeue(ready_queue));
+                break;
+            }
+        }
+        current_time+=1;
+        new_element = check_ready_queue(queue, ready_queue, current_time);
+    }
+    // only when there is a change in the task that is being executed should there be an entry to say 
+    // that a new task has been started 
     return;
 }
+
 
 int main(){
 
@@ -157,6 +207,7 @@ int main(){
     Queue *inital_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *rr_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *npsjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
+    Queue *psjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     while(fgets(inputLine, sizeof(inputLine), fp) != NULL){
         printf("%s\n", inputLine);    
         taskNumber = atoi(strtok(inputLine, "T ,\n"));
@@ -169,34 +220,17 @@ int main(){
         task->remaining = task->burst;
         task->wait_time = 0;
         queue_enqueue(inital_tasks, task);
+        queue_enqueue(rr_tasks, task);
+        queue_enqueue(npsjf_tasks, task);
+        queue_enqueue(psjf_tasks, task);
     }
-    for(int i = 0; i < inital_tasks->size; i++){
-        void* next_element = queue_get_element(inital_tasks, i);
-        Task* new_task = malloc(sizeof(Task));
-        Task* old_task = (Task*)next_element;
-        new_task->number = old_task->number;
-        new_task->arrival = old_task->arrival;
-        new_task->burst = old_task->burst;
-        new_task->remaining = old_task->burst;
-        new_task->wait_time = 0;
-        queue_enqueue(rr_tasks, new_task);
-    }
-    for(int i = 0; i < inital_tasks->size; i++){
-        void* next_element = queue_get_element(inital_tasks, i);
-        Task* new_task = malloc(sizeof(Task));
-        Task* old_task = (Task*)next_element;
-        new_task->number = old_task->number;
-        new_task->arrival = old_task->arrival;
-        new_task->burst = old_task->burst;
-        new_task->remaining = old_task->burst;
-        new_task->wait_time = 0;
-        queue_enqueue(npsjf_tasks, new_task);
-    }
+    
     FILE* output_file = fopen("Output.txt", "w");
     //FCFS implementationnt fcfs(inital_tasks);
-    fcfs((void*)inital_tasks, output_file);
-    round_robin((void*)rr_tasks, output_file);
+    fcfs(inital_tasks, output_file);
+    round_robin(rr_tasks, output_file);
     npsjf(npsjf_tasks, output_file);
+    psjf(psjf_tasks, output_file);
     fclose(output_file);
     fclose(fp);
 
