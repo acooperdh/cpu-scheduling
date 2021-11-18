@@ -88,10 +88,6 @@ void round_robin(Queue* queue, FILE* fp){
     return;
 }
 // non preemptive shortest job first 
-int new_npsjf(Queue* queue, FILE* fp){
-    int current_time = 0;
-    
-}
 int npsjf(Queue* queue, FILE* fp){
     fprintf(fp, "\nNPSJF:\n");
     int current_time = 0;
@@ -215,7 +211,7 @@ int main(){
     //FCFS implementationnt fcfs(inital_tasks);
     fcfs(inital_tasks, output_file);
     round_robin(rr_tasks, output_file);
-    npsjf(npsjf_tasks, output_file);
+    //npsjf(npsjf_tasks, output_file);
     //psjf(psjf_tasks, output_file);
     fclose(output_file);
 
