@@ -88,26 +88,79 @@ void round_robin(Queue* queue, FILE* fp){
     return;
 }
 // non preemptive shortest job first 
+int new_npsjf(Queue* queue, FILE* fp){
+    int current_time = 0;
+    
+}
 int npsjf(Queue* queue, FILE* fp){
     fprintf(fp, "\nNPSJF:\n");
     int current_time = 0;
-    double total_wait_time, average_wait_time;
     int num_of_tasks = queue->size;
-    void* first_task = queue_peek(queue);
+    void* first_task = queue_dequeue(queue);
     Task* task = (Task*)first_task;
     int first_burst = task->burst;
-    // after the first task is completed, the next tasks selected are according to burst time 
-    // and not arrival time
-    for(int i = 1; i < queue->size; i++){
-        for(int j = 2; j < queue->size - 1; j++){
-            void* first_element = queue_get_element(queue, j);
-            void* second_element = queue_get_element(queue, j+1);
-            if(((Task*)first_element)->burst > ((Task*)second_element)->burst && ((Task*)second_element)->arrival < first_burst){
-                void* temp = queue_remove_element(queue, j);
-                queue_enqueue(queue, temp);
-            }
+    task->start_time = 0;
+    task->end_time = first_burst;
+    Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    queue_enqueue(ready_queue, first_task);
+    Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    while(ready_queue->size > 0){
+        void* curr_task = queue_peek(ready_queue);
+        Task* current_task = (Task*)curr_task;
+        // if current task is finished, add to finished queue and remove from ready queue
+        if (current_task->remaining == 0){
+            void* finished_task = queue_dequeue(ready_queue);
+            Task* finished_task_ptr = (Task*)finished_task;
+            finished_task_ptr->end_time = current_time;
+            queue_enqueue(finished_queue, finished_task_ptr);
+        } //check arrival of new tasks, add to wait times of tasks already in the queue
+        else{
+            /*
+            1. check if a new task has arrived at the current time
+            2. if so then compare it to the tasks already in the queue and enter it where it belongs based on time remaining 
+            if there is two tasks with the same amount of time remaining, then the older task takes prioirty 
+            3. increase the wait time of all tasks in the ready queue
+            4. increase the current time 
+
+            */
+           for(int i = 0; i < queue->size; i++){
+                void* element = queue_get_element(queue, i);
+                Task* task = (Task*)element;
+                // new task has arrived
+                if (task->arrival == current_time){
+                    // now compare the time remaning of the new tasks with all current tasks in the queue including the current task running
+                    for(int j = 0; j < ready_queue->size; j++){
+                        void* element = queue_get_element(ready_queue, j);
+                        Task* queued_task = (Task*)element;
+                        // if the new task has a shorter time remaining then the task in this position, insert the new task in that position
+                        if (queued_task->remaining > task->remaining){
+                            queue_add_at(ready_queue, j, task);
+                            break;
+                        }else if(queued_task->remaining == task->remaining){
+                            // if the new task has a shorter time remaining then the task in this position, insert the new task in that position
+                            if (queued_task->number > task->number){
+                                queue_add_at(ready_queue, j, task);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+           }
         }
     }
+    // after the first task is completed, the next tasks selected are according to burst time 
+    // and not arrival time
+    // for(int i = 1; i < queue->size ; i++){
+    //     for(int j = 2; j < queue->size - 1; j++){
+    //         void* first_element = queue_get_element(queue, j);
+    //         void* second_element = queue_get_element(queue, j+1);
+    //         if(((Task*)first_element)->burst > ((Task*)second_element)->burst && ((Task*)second_element)->arrival < first_burst){
+    //             void* temp = queue_remove_element(queue, j);
+    //             queue_enqueue(queue, temp);
+    //         }
+    //     }
+    // }
     for(int i = 0; i < queue->size; i++){
         void* next_element = queue_get_element(queue, i);
         Task* task = (Task*)next_element;
@@ -130,7 +183,7 @@ int main(){
     int taskBurstTime;
     char inputLine[10];
 
-    FILE* fp = fopen("TaskSpec.txt", "r");
+    FILE* fp = fopen("TaskSpec2.txt", "r");
 
     if (fp == NULL){
         printf("Error opening file\n");
@@ -156,6 +209,7 @@ int main(){
         queue_enqueue(npsjf_tasks, task);
         queue_enqueue(psjf_tasks, task);
     }
+    fclose(fp);
     
     FILE* output_file = fopen("Output.txt", "w");
     //FCFS implementationnt fcfs(inital_tasks);
@@ -164,7 +218,6 @@ int main(){
     npsjf(npsjf_tasks, output_file);
     //psjf(psjf_tasks, output_file);
     fclose(output_file);
-    fclose(fp);
 
     return 0;
 }
