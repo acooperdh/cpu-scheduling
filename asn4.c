@@ -33,6 +33,31 @@ void sort_by_task_number(Queue* queue){
     return;
 }
 
+void sort_by_remaining(Queue* queue){
+    for(int i = 0; i < queue->size; i++){
+        for(int j = 0; j < queue->size - 1; j++){
+            void* first_element = queue_get_element(queue, j);
+            void* second_element = queue_get_element(queue, j+1);
+            if(((Task*)first_element)->remaining > ((Task*)second_element)->remaining){
+                void* temp = queue_remove_element(queue, j);
+                queue_enqueue(queue, temp);
+            }
+        }
+    }
+    for(int i = 0; i < queue->size - 1; i++){
+        void* current = queue_get_element(queue, i);
+        void* next = queue_get_element(queue, i+1);
+        Task* curr_task = (Task*)current;
+        Task* next_task = (Task*)next;
+        if(curr_task->remaining <= next_task->remaining){
+            continue;
+        }else{
+            sort_by_remaining(queue);
+        }
+    }
+    return;
+}
+
 // outputs waiting times for each task as well as returns the total amount of time waiting 
 void output_waiting_times(Queue* queue, FILE* fp){
     double total_wait_time = 0;
@@ -306,7 +331,7 @@ void new_npsjf(Queue* init_queue, FILE* fp){
     Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     int num_of_tasks = init_queue->size;
-
+    fprintf(fp, "\n%d\n", num_of_tasks);
     // current task variables 
     void* void_curr_task = queue_dequeue(init_queue);
     Task* current_task = (Task*)void_curr_task;
@@ -318,9 +343,45 @@ void new_npsjf(Queue* init_queue, FILE* fp){
     int counter = 0; // not being used right now
     while(finished_queue->size != num_of_tasks){
         current_time += 1;
+        //printf("\nthis is the size of the finished queue -> %d\n", finished_queue->size);
         curr_task_arr[0]->remaining -= 1;
+        // if the current task is finished, add it to the finished queue and get the next task in the queue
+        if(curr_task_arr[0]->remaining <= 0){
+            curr_task_arr[0]->end_time = current_time;
+            printf("T%d\t%d\t%d\n", curr_task_arr[0]->number, curr_task_arr[0]->start_time, curr_task_arr[0]->end_time);
+            //curr_task_arr[0]->wait_time = curr_task_arr[0]->end_time - curr_task_arr[0]->arrival - curr_task_arr[0]->burst;
+            queue_enqueue(finished_queue, curr_task_arr[0]);
+            if (ready_queue->size != 0){ //if there is no other task in queue, new tasks must be arriving :) 
+                printf("it;s zero\n");
+                void* temp = queue_dequeue(ready_queue);
+                curr_task_arr[0] = (Task*)temp;
+                curr_task_arr[0]->start_time = current_time;
+            }
+        }else{
+            /*
+                1. need to determine if new tasks have arrived
+                2. if so, determine how many and ensure that they are entered into the queue based on
+                    burst time
+                3. if there is two or more tasks that arrive at the same time, then the one with the shorter
+                burst / remaining should be the task placed higher in the queue
+                4. if no new tasks, continue through the loop until there is new tasks 
+            */
+           for(int i = 0; i < init_queue->size; i++){
+               printf("%d ", i);
+               void* check_arr_ptr = queue_get_element(init_queue, i);
+               Task* check_arrival = (Task*)check_arr_ptr;
+               if (check_arrival->arrival == current_time){
+                    
+                    queue_enqueue(ready_queue, check_arrival);
+
+               }
+           }
+        
+        }
     }
 
+    sort_by_task_number(finished_queue);
+    return;
 }
 
 int main(){
@@ -330,7 +391,7 @@ int main(){
     int taskBurstTime;
     char inputLine[10];
 
-    FILE* fp = fopen("TaskSpecRR.txt", "r");
+    FILE* fp = fopen("TaskSpecFCFS.txt", "r");
 
     if (fp == NULL){
         printf("Error opening file\n");
@@ -362,7 +423,7 @@ int main(){
     //FCFS implementationnt fcfs(inital_tasks);
     fcfs(inital_tasks, output_file);
     new_rr(rr_tasks, output_file);
-    //npsjf(npsjf_tasks, output_file);
+    new_npsjf(npsjf_tasks, output_file);
     //psjf(psjf_tasks, output_file);
     fclose(output_file);
 

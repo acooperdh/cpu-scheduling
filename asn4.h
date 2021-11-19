@@ -11,7 +11,6 @@ typedef struct _task{
     int wait_time;
     int start_time;
     int end_time;
-    int rounds;
 } Task;
 
 #endif
