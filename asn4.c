@@ -300,6 +300,29 @@ int npsjf(Queue* queue, FILE* fp){
     return 0;
 }
 
+void new_npsjf(Queue* init_queue, FILE* fp){
+    // local function variables 
+    int current_time = 0;
+    Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    int num_of_tasks = init_queue->size;
+
+    // current task variables 
+    void* void_curr_task = queue_dequeue(init_queue);
+    Task* current_task = (Task*)void_curr_task;
+    current_task->start_time = current_time;
+    Task* curr_task_arr[1];
+    curr_task_arr[0] = current_task;
+    
+    fprintf(fp, "\nNPSJF:\n");
+    int counter = 0; // not being used right now
+    while(finished_queue->size != num_of_tasks){
+        current_time += 1;
+        curr_task_arr[0]->remaining -= 1;
+    }
+
+}
+
 int main(){
 
     int taskNumber;
