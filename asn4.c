@@ -107,13 +107,14 @@ void print_queue(Queue* queue){
         printf("T%d\t%d\t%d\t%d , ", task->number, task->arrival, task->burst, task->remaining);
     }
 }
+// new round robin method -- works like a charm 
 void new_rr(Queue* init_queue, FILE* fp){
     // function related variables
     int current_time = 0;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     int num_of_tasks = init_queue->size;
-    printf("num of tasks : %d\n", num_of_tasks);
+
     //current task variables
     void* void_curr_task = queue_dequeue(init_queue);
     Task* curr_task = (Task*)void_curr_task;
@@ -126,10 +127,10 @@ void new_rr(Queue* init_queue, FILE* fp){
         counter+=1;
         current_time += 1;
         arr[0]->remaining -= 1;
-
         if(arr[0]->remaining <= 0){
             arr[0]->end_time = current_time;
             fprintf(fp, "T%d\t%d\t%d\n", arr[0]->number, arr[0]->start_time, arr[0]->end_time);
+            arr[0]->wait_time = arr[0]->end_time - arr[0]->arrival - arr[0]->burst;
             queue_enqueue(finished_queue, arr[0]);
             if (ready_queue->size == 0){
                 break;
@@ -145,36 +146,22 @@ void new_rr(Queue* init_queue, FILE* fp){
                 4. if there is no new tasks then the loop continues on until the time quantum is reached.
             */
             for(int i = 0; i < init_queue->size; i++){
-                //printf("i = %d\tinit_queue->size = %d\n", i, init_queue->size);
                 void* check_arrival_ptr = queue_get_element(init_queue, i);
                 Task* check_arrival = (Task*)check_arrival_ptr;
                 if(check_arrival->arrival == current_time){
-                    //printf("new task arrived T%d, %d, %d\n", check_arrival->number, check_arrival->arrival, check_arrival->burst);
                     queue_enqueue(ready_queue, check_arrival);
-                    // queue_remove_element(init_queue, i);
                 }
             }
-        //    for(int i = 0; i < ready_queue->size; i++){
-        //         void* next_element = queue_get_element(ready_queue, i);
-        //         Task* task = (Task*)next_element;
-        //         task->wait_time += 1;
-        //    }
            if(counter % 4 == 0){
                 arr[0]->end_time = current_time;
                 Task* temp_task = arr[0];
                 fprintf(fp, "T%d\t%d\t%d\n", temp_task->number, temp_task->start_time, temp_task->end_time);
-                //printf("T%d\t%d\t%d\n", arr[0]->number, arr[0]->start_time, current_time);
                 queue_enqueue(ready_queue, temp_task);
                 free(arr[0]);
                 void* temp = queue_dequeue(ready_queue);
                 arr[0] = (Task*)temp;
                 arr[0]->start_time = current_time;
                 counter = 0;
-           }
-           for(int i = 0; i < ready_queue->size; i++){
-                void* next_element = queue_get_element(ready_queue, i);
-                Task* task = (Task*)next_element;
-                task->wait_time += 1;
            }
         }
     }
