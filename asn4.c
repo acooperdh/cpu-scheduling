@@ -38,7 +38,6 @@ void sort_by_task_number(Queue* queue){
         }else{
             sort_by_task_number(queue);
         }
-        
     }
     return;
 }
@@ -97,6 +96,7 @@ void new_tasks_check(Queue* init_queue, Queue* ready_queue, int current_time){
     }
     return;
 }
+
 /* Function: increase_wait_times
  * -----------------------------
  * Increases the wait times of all tasks in a queue
@@ -111,6 +111,7 @@ void increase_wait_times(Queue* queue){
         Task* task = (Task*)next_elem;
         task->wait_time+=1;
     }
+    return;
 }
 
 /* Function: output_waiting_times
@@ -232,9 +233,10 @@ void rr(Queue* init_queue, FILE* fp){
 
     // output the wait times & average wait time 
     output_waiting_times(finished_queue, fp);
-    return;
 
+    return;
 }
+
 /* Function: npsjf
  * ---------------
  * Using a Non-Preemptive Shortest Job First scheduling algorithm, calculates
@@ -291,8 +293,10 @@ void nspjf(Queue* init_queue, FILE* fp){
 
     // output the wait times & average wait time 
     output_waiting_times(finished_queue, fp);
+
     return;
 }
+
 /* Function: psjf
  * ---------------
  * Using a Preemptive Shortest Job First scheduling algorithm, calculates
@@ -359,6 +363,7 @@ void psjf(Queue* init_queue, FILE* fp){
     }
     // output the wait times & average wait time 
     output_waiting_times(finished_queue, fp);
+
     return;
 }
 
