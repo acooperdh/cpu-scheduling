@@ -336,28 +336,28 @@ void new_npsjf(Queue* init_queue, FILE* fp){
     void* void_curr_task = queue_dequeue(init_queue);
     Task* current_task = (Task*)void_curr_task;
     current_task->start_time = current_time;
-    Task* curr_task_arr[1];
-    curr_task_arr[0] = current_task;
+    Task* current_task_arr[1];
+    current_task_arr[0] = current_task;
     
     fprintf(fp, "\nNPSJF:\n");
     int counter = 0; // not being used right now
     while(finished_queue->size != num_of_tasks){
         current_time += 1;
-        //printf("\nthis is the size of the finished queue -> %d\n", finished_queue->size);
-        curr_task_arr[0]->remaining -= 1;
+        counter+=1;
+        current_task_arr[0]->remaining -= 1;
         // if the current task is finished, add it to the finished queue and get the next task in the queue
-        if(curr_task_arr[0]->remaining <= 0){
-            curr_task_arr[0]->end_time = current_time;
-            printf("T%d\t%d\t%d\n", curr_task_arr[0]->number, curr_task_arr[0]->start_time, curr_task_arr[0]->end_time);
-            //curr_task_arr[0]->wait_time = curr_task_arr[0]->end_time - curr_task_arr[0]->arrival - curr_task_arr[0]->burst;
-            queue_enqueue(finished_queue, curr_task_arr[0]);
-            if (ready_queue->size != 0){ //if there is no other task in queue, new tasks must be arriving :) 
-                printf("it;s zero\n");
-                void* temp = queue_dequeue(ready_queue);
-                curr_task_arr[0] = (Task*)temp;
-                curr_task_arr[0]->start_time = current_time;
+        if(current_task_arr[0]->remaining <= 0){
+            current_task_arr[0]->end_time = current_time;
+            fprintf(fp, "T%d\t%d\t%d\n", current_task_arr[0]->number, current_task_arr[0]->start_time, current_task_arr[0]->end_time);
+            queue_enqueue(finished_queue, current_task_arr[0]);
+            if (ready_queue->size == 0){
+                break;
             }
-        }else{
+            void* temp = queue_dequeue(ready_queue);
+            current_task_arr[0] = (Task*)temp;
+            current_task_arr[0]->start_time = current_time;
+            counter = 0;
+        }
             /*
                 1. need to determine if new tasks have arrived
                 2. if so, determine how many and ensure that they are entered into the queue based on
@@ -366,21 +366,27 @@ void new_npsjf(Queue* init_queue, FILE* fp){
                 burst / remaining should be the task placed higher in the queue
                 4. if no new tasks, continue through the loop until there is new tasks 
             */
-           for(int i = 0; i < init_queue->size; i++){
-               printf("%d ", i);
-               void* check_arr_ptr = queue_get_element(init_queue, i);
-               Task* check_arrival = (Task*)check_arr_ptr;
-               if (check_arrival->arrival == current_time){
-                    
-                    queue_enqueue(ready_queue, check_arrival);
-
-               }
-           }
-        
+        int prev_queue_size = ready_queue->size;
+        for(int i = 0; i < init_queue->size; i++){
+            void* check_arr_ptr = queue_get_element(init_queue, i);
+            Task* check_arrival = (Task*)check_arr_ptr;
+            if (check_arrival->arrival == current_time){
+                queue_enqueue(ready_queue, check_arrival);
+            }
+        }
+        if (ready_queue->size > prev_queue_size){
+            // sort the queue based on burst time
+            sort_by_remaining(ready_queue);
+        }
+        for(int i = 0; i < ready_queue->size; i++){
+            void* next_elem = queue_get_element(ready_queue, i);
+            Task* task = (Task*)next_elem;
+            task->wait_time+=1;
         }
     }
 
     sort_by_task_number(finished_queue);
+    output_waiting_times(finished_queue, fp);
     return;
 }
 
@@ -391,7 +397,7 @@ int main(){
     int taskBurstTime;
     char inputLine[10];
 
-    FILE* fp = fopen("TaskSpecFCFS.txt", "r");
+    FILE* fp = fopen("TaskSpecSJF.txt", "r");
 
     if (fp == NULL){
         printf("Error opening file\n");
