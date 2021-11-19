@@ -169,7 +169,7 @@ void nspjf(Queue* init_queue, FILE* fp){
     Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     int num_of_tasks = init_queue->size;
-    fprintf(fp, "\n%d\n", num_of_tasks);
+
     // current task variables 
     void* void_curr_task = queue_dequeue(init_queue);
     Task* current_task = (Task*)void_curr_task;
@@ -205,6 +205,7 @@ void nspjf(Queue* init_queue, FILE* fp){
                 4. if no new tasks, continue through the loop until there is new tasks 
             */
         int prev_queue_size = ready_queue->size;
+        // determines if there is any new tasks that have arrived
         for(int i = 0; i < init_queue->size; i++){
             void* check_arr_ptr = queue_get_element(init_queue, i);
             Task* check_arrival = (Task*)check_arr_ptr;
@@ -229,6 +230,87 @@ void nspjf(Queue* init_queue, FILE* fp){
     return;
 }
 
+void psjf(Queue* init_queue, FILE* fp){
+    // local function variables 
+    int current_time = 0;
+    Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
+    int num_of_tasks = init_queue->size;
+
+    // current task variables 
+    void* void_curr_task = queue_dequeue(init_queue);
+    Task* current_task = (Task*)void_curr_task;
+    current_task->start_time = current_time;
+    Task* current_task_arr[1];
+    current_task_arr[0] = current_task;
+    
+    fprintf(fp, "\nPSJF:\n");
+    int counter = 0;
+    while(finished_queue->size != num_of_tasks){
+        current_time += 1;
+        current_task_arr[0]->remaining -= 1;
+        if(current_task_arr[0]->remaining <= 0){
+            current_task_arr[0]->end_time = current_time;
+            fprintf(fp, "T%d\t%d\t%d\n", current_task_arr[0]->number, current_task_arr[0]->start_time, current_task_arr[0]->end_time);
+            queue_enqueue(finished_queue, current_task_arr[0]);
+            if (ready_queue->size == 0){
+                break;
+            }
+            void* temp = queue_dequeue(ready_queue);
+            current_task_arr[0] = (Task*)temp;
+            current_task_arr[0]->start_time = current_time;
+            counter = 0;
+        }
+
+        /*  1. determine if there is any new tasks that have arrived
+            2. determine where the new tasks should go in the ready queue
+            3. if the task at the front of the ready queue is new and has less time then the current task, 
+            put the current task back into the queue(in it's proper place) and begin the shorter task that just arrived
+            4. if there is no new tasks then simply continue with the current task until it is complete 
+        */
+        int prev_queue_size = ready_queue->size;
+        // determine if any new tasks have arrived
+        for(int i = 0; i < init_queue->size; i++){
+            void* check_arr_ptr = queue_get_element(init_queue, i);
+            Task* check_arrival = (Task*)check_arr_ptr;
+            if (check_arrival->arrival == current_time){
+                queue_enqueue(ready_queue, check_arrival);
+            }
+        }
+
+        /*if there has been a new task(s) added, compare it's burst time to the time remaining on the first task
+            1. sort the ready queue in order of remaining time left / burst (same thing at this point)
+            2. peek the first task in the sorted ready queue
+            3. if the first task arrival == current time, then we know a new task has the shortest burst in the queue currently
+            4. if it's remaining is less then the current task, replace the current task with the new task and 
+            enter the old current task into the ready queue in the proper place
+        */
+        if (ready_queue->size > prev_queue_size){
+            sort_by_remaining(ready_queue);
+            void* first_task_ptr = queue_peek(ready_queue);
+            Task* first_task = (Task*)first_task_ptr;
+            if (first_task->arrival == current_time && first_task->remaining < current_task_arr[0]->remaining){
+                current_task_arr[0]->end_time = current_time;
+                fprintf(fp, "T%d\t%d\t%d\n", current_task_arr[0]->number, current_task_arr[0]->start_time, current_task_arr[0]->end_time);
+                queue_enqueue(ready_queue, current_task_arr[0]);
+                void* temp = queue_dequeue(ready_queue);
+                current_task_arr[0] = (Task*)temp;
+                current_task_arr[0]->start_time = current_time;
+                sort_by_remaining(ready_queue);
+            }
+        }
+        // incremenet the wait times for all tasks in the ready queue 
+        for(int i = 0; i < ready_queue->size; i++){
+            void* next_elem = queue_get_element(ready_queue, i);
+            Task* task = (Task*)next_elem;
+            task->wait_time+=1;
+        }
+    }
+    sort_by_task_number(finished_queue);
+    output_waiting_times(finished_queue, fp);
+    return;
+}
+
 int main(){
 
     int taskNumber;
@@ -236,7 +318,7 @@ int main(){
     int taskBurstTime;
     char inputLine[10];
 
-    FILE* fp = fopen("TaskSpecSJF.txt", "r");
+    FILE* fp = fopen("TaskSpec.txt", "r");
 
     if (fp == NULL){
         printf("Error opening file\n");
@@ -268,7 +350,7 @@ int main(){
     fcfs(inital_tasks, output_file);
     rr(rr_tasks, output_file);
     nspjf(npsjf_tasks, output_file);
-    //psjf(psjf_tasks, output_file);
+    psjf(psjf_tasks, output_file);
     fclose(output_file);
 
     return 0;
