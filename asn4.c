@@ -109,7 +109,7 @@ void print_queue(Queue* queue){
 }
 // new round robin method -- works like a charm 
 void new_rr(Queue* init_queue, FILE* fp){
-    // function related variables
+    // local function varibales
     int current_time = 0;
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
@@ -119,25 +119,25 @@ void new_rr(Queue* init_queue, FILE* fp){
     void* void_curr_task = queue_dequeue(init_queue);
     Task* curr_task = (Task*)void_curr_task;
     curr_task->start_time = current_time;
-    Task* arr[1];
-    arr[0] = curr_task;
+    Task* curr_task_arr[1];
+    curr_task_arr[0] = curr_task;
     fprintf(fp, "\nRR:\n");
     int counter = 0;
     while(finished_queue->size != num_of_tasks){
         counter+=1;
         current_time += 1;
-        arr[0]->remaining -= 1;
-        if(arr[0]->remaining <= 0){
-            arr[0]->end_time = current_time;
-            fprintf(fp, "T%d\t%d\t%d\n", arr[0]->number, arr[0]->start_time, arr[0]->end_time);
-            arr[0]->wait_time = arr[0]->end_time - arr[0]->arrival - arr[0]->burst;
-            queue_enqueue(finished_queue, arr[0]);
+        curr_task_arr[0]->remaining -= 1;
+        if(curr_task_arr[0]->remaining <= 0){
+            curr_task_arr[0]->end_time = current_time;
+            fprintf(fp, "T%d\t%d\t%d\n", curr_task_arr[0]->number, curr_task_arr[0]->start_time, curr_task_arr[0]->end_time);
+            curr_task_arr[0]->wait_time = curr_task_arr[0]->end_time - curr_task_arr[0]->arrival - curr_task_arr[0]->burst;
+            queue_enqueue(finished_queue, curr_task_arr[0]);
             if (ready_queue->size == 0){
                 break;
             }
             void* temp = queue_dequeue(ready_queue);
-            arr[0] = (Task*)temp;
-            arr[0]->start_time = current_time;
+            curr_task_arr[0] = (Task*)temp;
+            curr_task_arr[0]->start_time = current_time;
             counter = 0;
         }else{
             /* 1. Need to determine if any new tasks have arrived.
@@ -153,14 +153,14 @@ void new_rr(Queue* init_queue, FILE* fp){
                 }
             }
            if(counter % 4 == 0){
-                arr[0]->end_time = current_time;
-                Task* temp_task = arr[0];
+                curr_task_arr[0]->end_time = current_time;
+                Task* temp_task = curr_task_arr[0];
                 fprintf(fp, "T%d\t%d\t%d\n", temp_task->number, temp_task->start_time, temp_task->end_time);
                 queue_enqueue(ready_queue, temp_task);
-                free(arr[0]);
+                free(curr_task_arr[0]);
                 void* temp = queue_dequeue(ready_queue);
-                arr[0] = (Task*)temp;
-                arr[0]->start_time = current_time;
+                curr_task_arr[0] = (Task*)temp;
+                curr_task_arr[0]->start_time = current_time;
                 counter = 0;
            }
         }
