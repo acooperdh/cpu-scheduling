@@ -4,10 +4,18 @@
 #include <string.h>
 #include "asn4.h"
 #include <stdbool.h>
+
 #define TASK_SIZE 8
 #define TIME_QUANTUM 4
 
-// sort a queue of tasks by task number, in ascending order -- used to organize queues before output 
+/* Function: sort_by_task_number
+ * -----------------------------
+ * Sorts a queue of Tasks in ascending order by task number
+ * 
+ * queue: queue of unsorted tasks
+ * 
+ * Returns: void
+ */
 void sort_by_task_number(Queue* queue){
     for(int i = 0; i < queue->size; i++){
         for(int j = 0; j < queue->size - 1; j++){
@@ -19,6 +27,7 @@ void sort_by_task_number(Queue* queue){
             }
         }
     }
+    // checks that the queue has been sorted properly
     for(int i = 0; i < queue->size - 1; i++){
         void* current = queue_get_element(queue, i);
         void* next = queue_get_element(queue, i+1);
@@ -34,7 +43,14 @@ void sort_by_task_number(Queue* queue){
     return;
 }
 
-// sort a queue of tasks by remaining time, in ascending order
+/* Function: sort_by_remaining
+ * ---------------------------
+ * Sorts a queue of Tasks in ascending order by time remaining
+ * 
+ * queue: queue of unsorted tasks
+ * 
+ * Returns: void
+ */
 void sort_by_remaining(Queue* queue){
     for(int i = 0; i < queue->size; i++){
         for(int j = 0; j < queue->size - 1; j++){
@@ -46,6 +62,7 @@ void sort_by_remaining(Queue* queue){
             }
         }
     }
+    // checks to ensure that the queue is in the correct order
     for(int i = 0; i < queue->size - 1; i++){
         void* current = queue_get_element(queue, i);
         void* next = queue_get_element(queue, i+1);
@@ -60,7 +77,16 @@ void sort_by_remaining(Queue* queue){
     return;
 }
 
-// add any new tasks to the ready queue when they arrive
+/* Function: new_tasks_check
+ * -------------------------
+ * Determines if any task(s) that have arrived and adds them to ready queue
+ * 
+ * init_queue: queue of all tasks 
+ * ready_queue: queue of tasks that have arrived & are waiting
+ * current_time: the current time in the CPU
+ * 
+ * Returns: void
+ */
 void new_tasks_check(Queue* init_queue, Queue* ready_queue, int current_time){
     for(int i = 0; i < init_queue->size; i++){
         void* check_arr_ptr = queue_get_element(init_queue, i);
@@ -71,7 +97,14 @@ void new_tasks_check(Queue* init_queue, Queue* ready_queue, int current_time){
     }
     return;
 }
-
+/* Function: increase_wait_times
+ * -----------------------------
+ * Increases the wait times of all tasks in a queue
+ * 
+ * queue: queue of tasks 
+ * 
+ * Returns: void
+ */
 void increase_wait_times(Queue* queue){
     for(int i = 0; i < queue->size; i++){
         void* next_elem = queue_get_element(queue, i);
@@ -80,7 +113,15 @@ void increase_wait_times(Queue* queue){
     }
 }
 
-// outputs waiting times for each task as well as returns the total amount of time waiting 
+/* Function: output_waiting_times
+ * ------------------------------
+ * Outputs the waiting times & average waiting time of a queue of tasks 
+ * to an output file
+ * queue: queue of finished tasks 
+ * fp: output file 
+ * 
+ * Returns: void
+ */
 void output_waiting_times(Queue* queue, FILE* fp){
     // sort the queue to output the wait times based on task number
     sort_by_task_number(queue);
@@ -95,7 +136,17 @@ void output_waiting_times(Queue* queue, FILE* fp){
     return; 
 }
 
-// first come first serve method working properly, needs to output to file
+/* Function: fcfs
+ * ---------------
+ * Uses the First Come First Serve scheduling algorithm to determine
+ * the execution order, wait times and average waiting times of a 
+ * queue of tasks. It outputs all of that information to an output file
+ * 
+ * queue: queue of tasks 
+ * fp: output file
+ * 
+ * Returns: void
+ */
 void fcfs(Queue* queue, FILE* fp){
     fprintf(fp,"FCSC:\n");
     int current_time = 0;
@@ -114,10 +165,21 @@ void fcfs(Queue* queue, FILE* fp){
     return;
 }
 
-// new round robin method -- works like a charm 
+/* Function: rr
+ * ------------
+ * Using the Round Robin scheduling algorithm to determine the execution order,
+ * waiting times and average waiting times of a queue of tasks. All of this 
+ * information is outputted to a text file.
+ * 
+ * queue: queue of tasks
+ * fp: output file
+ * 
+ * Returns: void
+ */
 void rr(Queue* init_queue, FILE* fp){
     // local function varibales
     int current_time = 0;
+    int counter = 0; //used to keep track of the time quantum
     Queue* finished_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue* ready_queue = queue_initialize(sizeof(int)*TASK_SIZE);
     int num_of_tasks = init_queue->size;
@@ -128,8 +190,9 @@ void rr(Queue* init_queue, FILE* fp){
     curr_task->start_time = current_time;
     Task* curr_task_arr[1];
     curr_task_arr[0] = curr_task;
+    
     fprintf(fp, "\nRR:\n");
-    int counter = 0;
+    
     while(finished_queue->size != num_of_tasks){
         counter+=1;
         current_time += 1;
@@ -138,7 +201,6 @@ void rr(Queue* init_queue, FILE* fp){
             curr_task_arr[0]->end_time = current_time;
             curr_task_arr[0]->wait_time = curr_task_arr[0]->end_time - curr_task_arr[0]->arrival - curr_task_arr[0]->burst;
             fprintf(fp, "T%d\t%d\t%d\n", curr_task_arr[0]->number, curr_task_arr[0]->start_time, curr_task_arr[0]->end_time);
-
             queue_enqueue(finished_queue, curr_task_arr[0]);
             if (ready_queue->size == 0){
                 break;
@@ -148,12 +210,12 @@ void rr(Queue* init_queue, FILE* fp){
             curr_task_arr[0]->start_time = current_time;
             counter = 0;
         }else{
-            /* 1. Need to determine if any new tasks have arrived.
-                2. if so then add them to the ready queue in the order that they arrive.
-                3. if there is 2 tasks that arrive at the same time, the new one goes first
-                4. if there is no new tasks then the loop continues on until the time quantum is reached.
-            */
            new_tasks_check(init_queue, ready_queue, current_time);
+
+           /* if the time quantum has been reached, record the execution times
+              queue in the ready queue, and set the first item in the ready queue to be 
+              the new current task
+           */
            if(counter % 4 == 0){
                 curr_task_arr[0]->end_time = current_time;
                 Task* temp_task = curr_task_arr[0];
@@ -173,6 +235,17 @@ void rr(Queue* init_queue, FILE* fp){
     return;
 
 }
+/* Function: npsjf
+ * ---------------
+ * Using a Non-Preemptive Shortest Job First scheduling algorithm, calculates
+ * the execution order, task waiting times and average waiting time and outputs 
+ * this information to an output file
+ * 
+ * queue: queue of tasks
+ * fp: output file
+ * 
+ * Returns: void
+ */
 void nspjf(Queue* init_queue, FILE* fp){
     // local function variables 
     int current_time = 0;
@@ -188,6 +261,7 @@ void nspjf(Queue* init_queue, FILE* fp){
     current_task_arr[0] = current_task;
     
     fprintf(fp, "\nNPSJF:\n");
+
     while(finished_queue->size != num_of_tasks){
         current_time += 1;
         current_task_arr[0]->remaining -= 1;
@@ -203,14 +277,7 @@ void nspjf(Queue* init_queue, FILE* fp){
             current_task_arr[0] = (Task*)temp;
             current_task_arr[0]->start_time = current_time;
         }
-            /*
-                1. need to determine if new tasks have arrived
-                2. if so, determine how many and ensure that they are entered into the queue based on
-                    burst time
-                3. if there is two or more tasks that arrive at the same time, then the one with the shorter
-                burst / remaining should be the task placed higher in the queue
-                4. if no new tasks, continue through the loop until there is new tasks 
-            */
+        
         int prev_queue_size = ready_queue->size;
         // determines if there is any new tasks that have arrived
         new_tasks_check(init_queue, ready_queue, current_time);
@@ -226,7 +293,17 @@ void nspjf(Queue* init_queue, FILE* fp){
     output_waiting_times(finished_queue, fp);
     return;
 }
-
+/* Function: psjf
+ * ---------------
+ * Using a Preemptive Shortest Job First scheduling algorithm, calculates
+ * the execution order, task waiting times and average waiting time and outputs 
+ * this information to an output file
+ * 
+ * queue: queue of tasks
+ * fp: output file
+ * 
+ * Returns: void
+ */
 void psjf(Queue* init_queue, FILE* fp){
     // local function variables 
     int current_time = 0;
@@ -242,6 +319,7 @@ void psjf(Queue* init_queue, FILE* fp){
     current_task_arr[0] = current_task;
     
     fprintf(fp, "\nPSJF:\n");
+
     while(finished_queue->size != num_of_tasks){
         current_time += 1;
         current_task_arr[0]->remaining -= 1;
@@ -257,27 +335,15 @@ void psjf(Queue* init_queue, FILE* fp){
             current_task_arr[0]->start_time = current_time;
         }
 
-        /*  1. determine if there is any new tasks that have arrived
-            2. determine where the new tasks should go in the ready queue
-            3. if the task at the front of the ready queue is new and has less time then the current task, 
-            put the current task back into the queue(in it's proper place) and begin the shorter task that just arrived
-            4. if there is no new tasks then simply continue with the current task until it is complete 
-        */
         int prev_queue_size = ready_queue->size;
         // determine if any new tasks have arrived
         new_tasks_check(init_queue, ready_queue, current_time);
-
-        /*if there has been a new task(s) added, compare it's burst time to the time remaining on the first task
-            1. sort the ready queue in order of remaining time left / burst (same thing at this point)
-            2. peek the first task in the sorted ready queue
-            3. if the first task arrival == current time, then we know a new task has the shortest burst in the queue currently
-            4. if it's remaining is less then the current task, replace the current task with the new task and 
-            enter the old current task into the ready queue in the proper place
-        */
+        // determines if a new task has a shorter burst then the current task's remaining time left 
         if (ready_queue->size > prev_queue_size){
-            sort_by_remaining(ready_queue);
+            sort_by_remaining(ready_queue); // sort the queue now that the new task(s) have been added 
             void* first_task_ptr = queue_peek(ready_queue);
             Task* first_task = (Task*)first_task_ptr;
+            // if the new task is at the front of the queue and has a shorter burst, swap it with the current task
             if (first_task->arrival == current_time && first_task->remaining < current_task_arr[0]->remaining){
                 current_task_arr[0]->end_time = current_time;
                 fprintf(fp, "T%d\t%d\t%d\n", current_task_arr[0]->number, current_task_arr[0]->start_time, current_task_arr[0]->end_time);
@@ -285,7 +351,7 @@ void psjf(Queue* init_queue, FILE* fp){
                 void* temp = queue_dequeue(ready_queue);
                 current_task_arr[0] = (Task*)temp;
                 current_task_arr[0]->start_time = current_time;
-                sort_by_remaining(ready_queue);
+                sort_by_remaining(ready_queue); // sort the ready queue again now that the current task has changed
             }
         }
         // incremenet the wait times for all tasks in the ready queue 
@@ -310,11 +376,13 @@ int main(){
         return 1;
     }
 
-    //initialize a queue for each of the scheduling algorithms 
+    // initialize a queue for each of the scheduling algorithms 
     Queue *inital_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *rr_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *npsjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *psjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
+
+    // read in tasks & add them to the queues
     while(fgets(inputLine, sizeof(inputLine), fp) != NULL){
         taskNumber = atoi(strtok(inputLine, "T ,\n"));
         taskArrivalTime = atoi(strtok(NULL, "T,\n"));
