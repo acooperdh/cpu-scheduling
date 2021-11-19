@@ -7,6 +7,7 @@
 #define TASK_SIZE 8
 #define TIME_QUANTUM 4
 
+// sort a queue of tasks by task number, in ascending order -- used to organize queues before output 
 void sort_by_task_number(Queue* queue){
     for(int i = 0; i < queue->size; i++){
         for(int j = 0; j < queue->size - 1; j++){
@@ -33,6 +34,7 @@ void sort_by_task_number(Queue* queue){
     return;
 }
 
+// sort a queue of tasks by remaining time, in ascending order
 void sort_by_remaining(Queue* queue){
     for(int i = 0; i < queue->size; i++){
         for(int j = 0; j < queue->size - 1; j++){
@@ -58,8 +60,30 @@ void sort_by_remaining(Queue* queue){
     return;
 }
 
+// add any new tasks to the ready queue when they arrive
+void new_tasks_check(Queue* init_queue, Queue* ready_queue, int current_time){
+    for(int i = 0; i < init_queue->size; i++){
+        void* check_arr_ptr = queue_get_element(init_queue, i);
+        Task* check_arrival = (Task*)check_arr_ptr;
+        if (check_arrival->arrival == current_time){
+            queue_enqueue(ready_queue, check_arrival);
+        }
+    }
+    return;
+}
+
+void increase_wait_times(Queue* queue){
+    for(int i = 0; i < queue->size; i++){
+        void* next_elem = queue_get_element(queue, i);
+        Task* task = (Task*)next_elem;
+        task->wait_time+=1;
+    }
+}
+
 // outputs waiting times for each task as well as returns the total amount of time waiting 
 void output_waiting_times(Queue* queue, FILE* fp){
+    // sort the queue to output the wait times based on task number
+    sort_by_task_number(queue);
     double total_wait_time = 0;
     for(int i = 0; i < queue->size; i++){
         void* next_element = queue_get_element(queue, i);
@@ -90,13 +114,6 @@ void fcfs(Queue* queue, FILE* fp){
     return;
 }
 
-void print_queue(Queue* queue){
-    for(int i = 0; i < queue->size; i++){
-        void* next_element = queue_get_element(queue, i);
-        Task* task = (Task*)next_element;
-        printf("T%d\t%d\t%d\t%d , ", task->number, task->arrival, task->burst, task->remaining);
-    }
-}
 // new round robin method -- works like a charm 
 void rr(Queue* init_queue, FILE* fp){
     // local function varibales
@@ -119,8 +136,9 @@ void rr(Queue* init_queue, FILE* fp){
         curr_task_arr[0]->remaining -= 1;
         if(curr_task_arr[0]->remaining <= 0){
             curr_task_arr[0]->end_time = current_time;
-            fprintf(fp, "T%d\t%d\t%d\n", curr_task_arr[0]->number, curr_task_arr[0]->start_time, curr_task_arr[0]->end_time);
             curr_task_arr[0]->wait_time = curr_task_arr[0]->end_time - curr_task_arr[0]->arrival - curr_task_arr[0]->burst;
+            fprintf(fp, "T%d\t%d\t%d\n", curr_task_arr[0]->number, curr_task_arr[0]->start_time, curr_task_arr[0]->end_time);
+
             queue_enqueue(finished_queue, curr_task_arr[0]);
             if (ready_queue->size == 0){
                 break;
@@ -135,13 +153,7 @@ void rr(Queue* init_queue, FILE* fp){
                 3. if there is 2 tasks that arrive at the same time, the new one goes first
                 4. if there is no new tasks then the loop continues on until the time quantum is reached.
             */
-            for(int i = 0; i < init_queue->size; i++){
-                void* check_arrival_ptr = queue_get_element(init_queue, i);
-                Task* check_arrival = (Task*)check_arrival_ptr;
-                if(check_arrival->arrival == current_time){
-                    queue_enqueue(ready_queue, check_arrival);
-                }
-            }
+           new_tasks_check(init_queue, ready_queue, current_time);
            if(counter % 4 == 0){
                 curr_task_arr[0]->end_time = current_time;
                 Task* temp_task = curr_task_arr[0];
@@ -156,9 +168,7 @@ void rr(Queue* init_queue, FILE* fp){
         }
     }
 
-    // sorting finished task queue by task number
-    sort_by_task_number(finished_queue);
-    // output wait times for each task
+    // output the wait times & average wait time 
     output_waiting_times(finished_queue, fp);
     return;
 
@@ -178,10 +188,8 @@ void nspjf(Queue* init_queue, FILE* fp){
     current_task_arr[0] = current_task;
     
     fprintf(fp, "\nNPSJF:\n");
-    int counter = 0; // not being used right now
     while(finished_queue->size != num_of_tasks){
         current_time += 1;
-        counter+=1;
         current_task_arr[0]->remaining -= 1;
         // if the current task is finished, add it to the finished queue and get the next task in the queue
         if(current_task_arr[0]->remaining <= 0){
@@ -194,7 +202,6 @@ void nspjf(Queue* init_queue, FILE* fp){
             void* temp = queue_dequeue(ready_queue);
             current_task_arr[0] = (Task*)temp;
             current_task_arr[0]->start_time = current_time;
-            counter = 0;
         }
             /*
                 1. need to determine if new tasks have arrived
@@ -206,26 +213,16 @@ void nspjf(Queue* init_queue, FILE* fp){
             */
         int prev_queue_size = ready_queue->size;
         // determines if there is any new tasks that have arrived
-        for(int i = 0; i < init_queue->size; i++){
-            void* check_arr_ptr = queue_get_element(init_queue, i);
-            Task* check_arrival = (Task*)check_arr_ptr;
-            if (check_arrival->arrival == current_time){
-                queue_enqueue(ready_queue, check_arrival);
-            }
-        }
+        new_tasks_check(init_queue, ready_queue, current_time);
         if (ready_queue->size > prev_queue_size){
             // sort the queue based on burst time
             sort_by_remaining(ready_queue);
         }
         // increment the wait times for all tasks in the ready queue
-        for(int i = 0; i < ready_queue->size; i++){
-            void* next_elem = queue_get_element(ready_queue, i);
-            Task* task = (Task*)next_elem;
-            task->wait_time+=1;
-        }
+        increase_wait_times(ready_queue);
     }
 
-    sort_by_task_number(finished_queue);
+    // output the wait times & average wait time 
     output_waiting_times(finished_queue, fp);
     return;
 }
@@ -245,7 +242,6 @@ void psjf(Queue* init_queue, FILE* fp){
     current_task_arr[0] = current_task;
     
     fprintf(fp, "\nPSJF:\n");
-    int counter = 0;
     while(finished_queue->size != num_of_tasks){
         current_time += 1;
         current_task_arr[0]->remaining -= 1;
@@ -259,7 +255,6 @@ void psjf(Queue* init_queue, FILE* fp){
             void* temp = queue_dequeue(ready_queue);
             current_task_arr[0] = (Task*)temp;
             current_task_arr[0]->start_time = current_time;
-            counter = 0;
         }
 
         /*  1. determine if there is any new tasks that have arrived
@@ -270,13 +265,7 @@ void psjf(Queue* init_queue, FILE* fp){
         */
         int prev_queue_size = ready_queue->size;
         // determine if any new tasks have arrived
-        for(int i = 0; i < init_queue->size; i++){
-            void* check_arr_ptr = queue_get_element(init_queue, i);
-            Task* check_arrival = (Task*)check_arr_ptr;
-            if (check_arrival->arrival == current_time){
-                queue_enqueue(ready_queue, check_arrival);
-            }
-        }
+        new_tasks_check(init_queue, ready_queue, current_time);
 
         /*if there has been a new task(s) added, compare it's burst time to the time remaining on the first task
             1. sort the ready queue in order of remaining time left / burst (same thing at this point)
@@ -300,36 +289,33 @@ void psjf(Queue* init_queue, FILE* fp){
             }
         }
         // incremenet the wait times for all tasks in the ready queue 
-        for(int i = 0; i < ready_queue->size; i++){
-            void* next_elem = queue_get_element(ready_queue, i);
-            Task* task = (Task*)next_elem;
-            task->wait_time+=1;
-        }
+        increase_wait_times(ready_queue);
     }
-    sort_by_task_number(finished_queue);
+    // output the wait times & average wait time 
     output_waiting_times(finished_queue, fp);
     return;
 }
 
 int main(){
-
+    // temp variables that will be used to read in and set task params
     int taskNumber;
     int taskArrivalTime;
     int taskBurstTime;
     char inputLine[10];
 
-    FILE* fp = fopen("TaskSpec.txt", "r");
+    FILE* fp = fopen("TaskSpec2.txt", "r");
 
     if (fp == NULL){
         printf("Error opening file\n");
         return 1;
     }
+
+    //initialize a queue for each of the scheduling algorithms 
     Queue *inital_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *rr_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *npsjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     Queue *psjf_tasks = queue_initialize(sizeof(int)*TASK_SIZE);
     while(fgets(inputLine, sizeof(inputLine), fp) != NULL){
-        //printf("%s\n", inputLine);    
         taskNumber = atoi(strtok(inputLine, "T ,\n"));
         taskArrivalTime = atoi(strtok(NULL, "T,\n"));
         taskBurstTime = atoi(strtok(NULL, "T,\n"));    
@@ -347,10 +333,13 @@ int main(){
     fclose(fp);
     
     FILE* output_file = fopen("Output.txt", "w");
+    
+    // 4 CPU scheduling algorithms
     fcfs(inital_tasks, output_file);
     rr(rr_tasks, output_file);
     nspjf(npsjf_tasks, output_file);
     psjf(psjf_tasks, output_file);
+
     fclose(output_file);
 
     return 0;

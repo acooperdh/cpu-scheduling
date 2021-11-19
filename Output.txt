@@ -1,48 +1,56 @@
 FCSC:
-T1	0	8
-T2	8	12
-T3	12	21
-T4	21	26
+T1	0	14
+T2	14	16
+T3	16	22
+T4	22	28
+T5	28	31
 Waiting Time T1: 0
-Waiting Time T2: 7
-Waiting Time T3: 10
-Waiting Time T4: 18
-Average Waiting Time: 8.75
+Waiting Time T2: 11
+Waiting Time T3: 13
+Waiting Time T4: 17
+Waiting Time T5: 22
+Average Waiting Time: 12.60
 
 RR:
 T1	0	4
-T2	4	8
-T3	8	12
-T4	12	16
-T1	16	20
-T3	20	24
-T4	24	25
-T3	25	26
-Waiting Time T1: 12
-Waiting Time T2: 3
-Waiting Time T3: 15
-Waiting Time T4: 17
-Average Waiting Time: 11.75
+T2	4	6
+T3	6	10
+T1	10	14
+T4	14	18
+T3	18	20
+T1	20	24
+T4	24	26
+T1	26	28
+Waiting Time T1: 14
+Waiting Time T2: 1
+Waiting Time T3: 11
+Waiting Time T4: 15
+Average Waiting Time: 10.25
 
 NPSJF:
-T1	0	8
-T2	8	12
-T4	12	17
-T3	17	26
+T1	0	14
+T2	14	16
+T5	16	19
+T4	19	25
+T3	25	31
 Waiting Time T1: 0
-Waiting Time T2: 7
-Waiting Time T3: 15
-Waiting Time T4: 9
-Average Waiting Time: 7.75
+Waiting Time T2: 11
+Waiting Time T3: 22
+Waiting Time T4: 14
+Waiting Time T5: 10
+Average Waiting Time: 11.40
 
 PSJF:
-T1	0	1
-T2	1	5
-T4	5	10
-T1	10	17
-T3	17	26
-Waiting Time T1: 9
+T1	0	3
+T2	3	5
+T3	5	6
+T5	6	9
+T3	9	14
+T4	14	20
+T1	20	31
+Waiting Time T1: 17
 Waiting Time T2: 0
-Waiting Time T3: 15
-Waiting Time T4: 2
-Average Waiting Time: 6.50
+Waiting Time T3: 5
+Waiting Time T4: 9
+Waiting Time T5: 0
+Average Waiting Time: 6.20
