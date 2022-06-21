@@ -1,5 +1,5 @@
 # cpu-scheduling
-Implementation of 4 different CPU scheduling algorithms in C
+Implementation of 4 different CPU scheduling algorithms in C completed for CSCI 3120
 
 Tasks are read in from a text file named TaskSpec. Each Task is on it's own line in the file 
 and is structure by task number, arrival time, burst time. 
